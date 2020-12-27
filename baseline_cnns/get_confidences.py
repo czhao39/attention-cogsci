@@ -183,7 +183,7 @@ def main():
             bar.next()
         bar.finish()
 
-    results.sort(reverse=True)
+    results.sort()
     with open(args.output, "w") as outfile:
         outfile.write("\n".join("\t".join(map(str, res)) for res in results))
 
