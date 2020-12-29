@@ -30,7 +30,8 @@ model_names = sorted(name for name in models.__dict__
 # Parse arguments
 parser = argparse.ArgumentParser(description='Evaluation of CIFAR-100 models on ImageNet')
 
-parser.add_argument('-o', '--output', type=str, default='confidences.txt', help='path to output file')
+parser.add_argument('-o1', '--confidences_out', type=str, default='confidences.txt', help='path to output file')
+parser.add_argument('-o2', '--representations_out', type=str, default='representations.npy', help='path to output file')
 # Datasets
 parser.add_argument('-d', '--data', type=str, required=True, help='path to dataset',)
 parser.add_argument('-j', '--workers', default=1, type=int, metavar='N',
@@ -137,7 +138,24 @@ def main():
         checkpoint = torch.load(args.resume)
         best_acc = checkpoint['best_acc']
         start_epoch = checkpoint['epoch']
+        if args.arch.startswith("vgg"):
+            checkpoint["state_dict"] = {f"module.{key[:9]}{key[16:]}": val for key, val in checkpoint["state_dict"].items()}
+            checkpoint["state_dict"]["module.classifier.weight"] = checkpoint["state_dict"]["module.classifiet"]
+            checkpoint["state_dict"]["module.classifier.bias"] = checkpoint["state_dict"]["module.classifie"]
+            del checkpoint["state_dict"]["module.classifiet"]
+            del checkpoint["state_dict"]["module.classifie"]
         model.load_state_dict(checkpoint['state_dict'])
+
+    # Add hook to get internal representation
+    global internal_repr
+    def update_internal_repr(module, inpt, output):
+        global internal_repr
+        internal_repr = inpt[0]
+    if args.arch == "resnet":
+        model.module.fc.register_forward_hook(update_internal_repr)
+    else:
+        model.module.classifier.register_forward_hook(update_internal_repr)
+    print(model)
 
     # Load CIFAR-100 classes
     with open(args.cifar100_classes, "r") as infile:
@@ -166,7 +184,9 @@ def main():
             top5 = [(cifar_classes[ind], output[ind]) for ind in top5_inds]
             top5.sort(key=lambda x: x[1], reverse=True)
 
-            results.append((dataset.imgs[batch_idx][0], *(x for tup in top5 for x in tup)))
+            rep = internal_repr.cpu().numpy()[0]
+
+            results.append((dataset.imgs[batch_idx][0], *(x for tup in top5 for x in tup), rep))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -184,8 +204,13 @@ def main():
         bar.finish()
 
     results.sort()
-    with open(args.output, "w") as outfile:
-        outfile.write("\n".join("\t".join(map(str, res)) for res in results))
+    with open(args.confidences_out, "w") as outfile:
+        outfile.write("\n".join("\t".join(map(str, res[:-1])) for res in results))
+    print("Wrote confidences to", args.confidences_out)
+
+    reprs = np.array([res[-1] for res in results])
+    np.save(args.representations_out, reprs)
+    print("Wrote internal representations to", args.representations_out)
 
 
 if __name__ == '__main__':
