@@ -51,12 +51,13 @@ def main():
     # Compute and display projections onto first two principal components
     pca = PCA(n_components=2)
     projected = pca.fit_transform(rep)
-    projected_df = pd.DataFrame(projected, )
     sns.set(style="whitegrid", font_scale=0.7)
     plt.figure(figsize=(6, 6))
     sns.scatterplot(x=projected[:, 0], y=projected[:, 1], hue=classes)
+    for i, label in enumerate(paths):
+        plt.annotate(label, projected[i], fontsize=4)
     plt.tight_layout()
-    plt.savefig("pca.png", dpi=200, bbox_inches="tight")
+    plt.savefig("pca.png", dpi=300, bbox_inches="tight")
     plt.show()
 
 
