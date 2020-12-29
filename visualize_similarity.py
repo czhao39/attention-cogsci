@@ -52,7 +52,7 @@ def main():
     pca = PCA(n_components=2)
     projected = pca.fit_transform(rep)
     sns.set(style="whitegrid", font_scale=0.7)
-    plt.figure(figsize=(6, 6))
+    plt.figure(figsize=(8, 6))
     sns.scatterplot(x=projected[:, 0], y=projected[:, 1], hue=classes)
     for i, label in enumerate(paths):
         plt.annotate(label, projected[i], fontsize=4)
