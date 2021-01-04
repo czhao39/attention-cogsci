@@ -115,8 +115,7 @@ def main():
     def update_internal_repr(module, inpt, output):
         global internal_repr
         internal_repr = inpt[0].flatten()
-    if args.arch == "resnet":
-        model.module.fc.register_forward_hook(update_internal_repr)
+    model.module.fc.register_forward_hook(update_internal_repr)
     print(model)
 
     # Load CIFAR-100 classes
