@@ -15,8 +15,9 @@ device = torch.device("cuda" if use_cuda else "cpu")
 
 parser = argparse.ArgumentParser(description="LearnToPayAttn-CIFAR100")
 
-parser.add_argument("-o1", "--confidences_out", type=str, default="confidences.txt", help="path to output file")
-parser.add_argument("-o2", "--representations_out", type=str, default="representations.npy", help="path to output file")
+parser.add_argument('-oc', '--confidences_out', type=str, default='confidences.txt', help='path to output file')
+parser.add_argument('-or', '--representations_out', type=str, default='representations.npy', help='path to output file')
+parser.add_argument('-os', '--softmaxes_out', type=str, default='softmaxes.npy', help='path to output file')
 parser.add_argument("--image_dir", "-i", required=True, help="path to images")
 parser.add_argument("--model", "-m", required=True, help="path to model")
 parser.add_argument("--attn_mode", type=str, default="before", help="insert attention modules before OR after maxpooling layers")
@@ -82,8 +83,8 @@ def main():
         global internal_repr
         #internal_repr = output.flatten()
         internal_repr = inpt[0].flatten()
-        print(internal_repr[100])
-        print(inpt[0].flatten()[10])
+        #print(internal_repr[100])
+        #print(inpt[0].flatten()[10])
     model.classify.register_forward_hook(update_internal_repr)
     #model.dense.register_forward_hook(update_internal_repr)
     #model.conv_block6.register_forward_hook(update_internal_repr)
@@ -106,16 +107,20 @@ def main():
 
             rep = internal_repr.cpu().numpy()
 
-            results.append((dataset.imgs[batch_idx][0], *(x for tup in top5 for x in tup), rep))
+            results.append((dataset.imgs[batch_idx][0], *(x for tup in top5 for x in tup), rep, output))
 
     results.sort()
     with open(opt.confidences_out, "w") as outfile:
-        outfile.write("\n".join("\t".join(map(str, res[:-1])) for res in results))
+        outfile.write("\n".join("\t".join(map(str, res[:-2])) for res in results))
     print("Wrote confidences to", opt.confidences_out)
 
-    reprs = np.array([res[-1] for res in results])
+    reprs = np.array([res[-2] for res in results])
     np.save(opt.representations_out, reprs)
     print("Wrote internal representations to", opt.representations_out)
+
+    softmaxes = np.array([res[-1] for res in results])
+    np.save(opt.softmaxes_out, softmaxes)
+    print("Wrote softmaxes to", opt.softmaxes_out)
 
 
 if __name__ == "__main__":

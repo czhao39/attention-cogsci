@@ -23,8 +23,9 @@ use_cuda = False
 device = torch.device("cuda" if use_cuda else "cpu")
 
 parser = argparse.ArgumentParser(description='ABN-CIFAR100')
-parser.add_argument('-o1', '--confidences_out', type=str, default='confidences.txt', help='path to output file')
-parser.add_argument('-o2', '--representations_out', type=str, default='representations.npy', help='path to output file')
+parser.add_argument('-oc', '--confidences_out', type=str, default='confidences.txt', help='path to output file')
+parser.add_argument('-or', '--representations_out', type=str, default='representations.npy', help='path to output file')
+parser.add_argument('-os', '--softmaxes_out', type=str, default='softmaxes.npy', help='path to output file')
 # Datasets
 parser.add_argument('-d', '--data', type=str, required=True, help='path to dataset',)
 parser.add_argument('-j', '--workers', default=1, type=int, metavar='N',
@@ -139,19 +140,23 @@ def main():
 
             rep = internal_repr.cpu().numpy()
 
-            results.append((dataset.imgs[batch_idx][0], *(x for tup in top5 for x in tup), rep))
+            results.append((dataset.imgs[batch_idx][0], *(x for tup in top5 for x in tup), rep, output))
 
             bar.next()
         bar.finish()
 
     results.sort()
     with open(args.confidences_out, "w") as outfile:
-        outfile.write("\n".join("\t".join(map(str, res[:-1])) for res in results))
+        outfile.write("\n".join("\t".join(map(str, res[:-2])) for res in results))
     print("Wrote confidences to", args.confidences_out)
 
-    reprs = np.array([res[-1] for res in results])
+    reprs = np.array([res[-2] for res in results])
     np.save(args.representations_out, reprs)
     print("Wrote internal representations to", args.representations_out)
+
+    softmaxes = np.array([res[-1] for res in results])
+    np.save(args.softmaxes_out, softmaxes)
+    print("Wrote softmaxes to", args.softmaxes_out)
 
 
 if __name__ == '__main__':
