@@ -52,7 +52,7 @@ def main():
     #sns.set(style="whitegrid", font_scale=0.2, rc={"xtick.major.pad": -5, "ytick.major.pad": -5})
     sns.set_style("whitegrid")
     plt.figure(figsize=(6, 6))
-    sns.heatmap(corr_df, annot=True, square=True, cbar=False)
+    sns.heatmap(corr_df, annot=True, square=True, cbar=True, vmin=-1, vmax=1)
     plt.tight_layout()
     plt.savefig("correlation.png", dpi=200, bbox_inches="tight")
     plt.show()

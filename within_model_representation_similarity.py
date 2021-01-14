@@ -44,7 +44,7 @@ def main():
     corr_df = pd.DataFrame(corr, index=paths, columns=paths)
     sns.set(style="whitegrid", font_scale=0.2, rc={"xtick.major.pad": -5, "ytick.major.pad": -5})
     plt.figure(figsize=(8, 8))
-    sns.heatmap(corr_df, square=True, cbar=False)
+    sns.heatmap(corr_df, square=True, cbar=True, vmin=-1, vmax=1)
     plt.tight_layout()
     plt.savefig("correlation.png", dpi=400, bbox_inches="tight")
     plt.show(block=False)
