@@ -4,6 +4,8 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy
+import scipy.cluster.hierarchy as sch
 import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
@@ -16,6 +18,34 @@ parser.add_argument("-r", "--representations", type=str, required=True, help="pa
 parser.add_argument("-i", "--imagedir", type=str, required=True, help="path to root directory of images")
 
 args = parser.parse_args()
+
+
+def cluster_corr(corr_array):
+    # Taken from https://wil.yegelwel.com/cluster-correlation-matrix/
+    """
+    Rearranges the correlation matrix, corr_array, so that groups of highly 
+    correlated variables are next to eachother 
+
+    Parameters
+    ----------
+    corr_array : pandas.DataFrame or numpy.ndarray
+        a NxN correlation matrix 
+
+    Returns
+    -------
+    pandas.DataFrame or numpy.ndarray
+        a NxN correlation matrix with the columns and rows rearranged
+    """
+    pairwise_distances = sch.distance.pdist(corr_array, metric="correlation")
+    linkage = sch.linkage(pairwise_distances, method='complete')
+    cluster_distance_threshold = pairwise_distances.max()/2
+    idx_to_cluster_array = sch.fcluster(linkage, cluster_distance_threshold,
+                                        criterion='distance')
+    idx = np.argsort(idx_to_cluster_array)
+
+    if isinstance(corr_array, pd.DataFrame):
+        return corr_array.iloc[idx, :].T.iloc[idx, :]
+    return corr_array[idx, :][:, idx]
 
 
 def main():
@@ -42,9 +72,11 @@ def main():
     # Compute and display correlation matrix
     corr = np.corrcoef(rep)
     corr_df = pd.DataFrame(corr, index=paths, columns=paths)
-    sns.set(style="whitegrid", font_scale=0.2, rc={"xtick.major.pad": -5, "ytick.major.pad": -5})
+    #corr_df = cluster_corr(corr_df)
+    sns.set(style="whitegrid", font_scale=0.8)
     plt.figure(figsize=(8, 8))
-    sns.heatmap(corr_df, square=True, cbar=True, vmin=-1, vmax=1)
+    plt.tick_params(axis="both", labelsize=4, pad=1, length=0)
+    sns.heatmap(corr_df, square=True, cmap="bwr", cbar=True, vmin=-1, vmax=1)
     plt.tight_layout()
     plt.savefig("correlation.png", dpi=400, bbox_inches="tight")
     plt.show(block=False)
