@@ -77,6 +77,13 @@ def main():
     plt.figure(figsize=(8, 8))
     plt.tick_params(axis="both", labelsize=4, pad=1, length=0)
     sns.heatmap(corr_df, square=True, cmap="bwr", cbar=True, vmin=-1, vmax=1)
+    unique_classes = list(np.unique(classes))
+    cmap = plt.cm.tab10(np.linspace(0, 1, len(unique_classes)))
+    for i, xy_tick in enumerate(zip(plt.gca().xaxis.get_ticklabels(), plt.gca().yaxis.get_ticklabels())):
+        the_class = corr_df.index[i][:corr_df.index[i].index("/")]
+        color = cmap[unique_classes.index(the_class)]
+        xy_tick[0].set_color(color)
+        xy_tick[1].set_color(color)
     plt.tight_layout()
     plt.savefig("correlation.png", dpi=400, bbox_inches="tight")
     plt.show(block=False)
